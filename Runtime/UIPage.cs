@@ -53,9 +53,32 @@ namespace Modules.Utilities
         [SerializeField][HideInInspector] public TransitionInfo m_TransitionInfo;
 
 
-        public CanvasGroup m_CanvasGroup { get; private set; }
+        private CanvasGroup m_CanvasGroupCache;
+
+        public CanvasGroup m_CanvasGroup
+        {
+            get
+            {
+                if (!m_CanvasGroupCache) m_CanvasGroupCache = GetComponent<CanvasGroup>();
+                return m_CanvasGroupCache;
+            }
+        }
 
         public RectTransform m_RectTransform { get; private set; }
+
+        /// <summary>
+        /// Resolves the CanvasGroup, recovering a stale cached reference automatically.
+        /// Returns false and logs a clear error if no CanvasGroup exists on this GameObject -
+        /// never creates, attaches, or destroys a component as part of recovery.
+        /// </summary>
+        private bool TryGetCanvasGroup(out CanvasGroup _canvasGroup)
+        {
+            _canvasGroup = m_CanvasGroup;
+            if (_canvasGroup) return true;
+
+            Debug.LogError($"UIPage '{name}' in group '{m_GroupName}' has no CanvasGroup - it was removed or destroyed externally. Re-add a CanvasGroup component to restore show/hide behaviour.", this);
+            return false;
+        }
 
 
         /// <summary>
@@ -64,7 +87,7 @@ namespace Modules.Utilities
         protected virtual void Awake()
         {
             m_IsTransitionPage = false;
-            m_CanvasGroup = GetComponent<CanvasGroup>();
+            m_CanvasGroupCache = GetComponent<CanvasGroup>();
             m_RectTransform = GetComponent<RectTransform>();
 
             // Register into group
@@ -102,12 +125,11 @@ namespace Modules.Utilities
 
         public void SetShow(bool _isShow)
         {
-            if (!m_CanvasGroup) m_CanvasGroup = GetComponent<CanvasGroup>();
+            if (!TryGetCanvasGroup(out var canvasGroup)) return;
 
-
-            m_CanvasGroup.alpha = _isShow ? 1 : 0;
-            m_CanvasGroup.interactable = _isShow;
-            m_CanvasGroup.blocksRaycasts = _isShow;
+            canvasGroup.alpha = _isShow ? 1 : 0;
+            canvasGroup.interactable = _isShow;
+            canvasGroup.blocksRaycasts = _isShow;
             m_IsOpened = _isShow;
 
         }
@@ -140,7 +162,7 @@ namespace Modules.Utilities
         public async UniTask ShowPageAsync(int _milliseconds, bool _isShow, CancellationToken _token = default)
         {
             var targetAlpha = _isShow ? 1f : 0f;
-            if (!m_CanvasGroup) m_CanvasGroup = GetComponent<CanvasGroup>();
+            if (!TryGetCanvasGroup(out var canvasGroup)) return;
 
 
             if (_isShow)
@@ -151,7 +173,7 @@ namespace Modules.Utilities
                     pe.OnBeginHidePage();
 
 
-            await m_CanvasGroup.DOFade(targetAlpha, _milliseconds / 1000f).SetUpdate(true).WithCancellation(_token);
+            await canvasGroup.DOFade(targetAlpha, _milliseconds / 1000f).SetUpdate(true).WithCancellation(_token);
 
 
             if (_isShow)
@@ -314,8 +336,11 @@ namespace Modules.Utilities
             {
                 _current.m_IsTransitionPage = true;
                 _target.m_IsTransitionPage = true;
-                _current.m_CanvasGroup.blocksRaycasts = false;
-                _target.m_CanvasGroup.blocksRaycasts = false;
+
+                if (!_current.TryGetCanvasGroup(out var currentCanvasGroup) || !_target.TryGetCanvasGroup(out var targetCanvasGroup)) return;
+
+                currentCanvasGroup.blocksRaycasts = false;
+                targetCanvasGroup.blocksRaycasts = false;
 
                 //if target sibling index is less than current sibling index, set target sibling index to current sibling index
 
@@ -350,8 +375,8 @@ namespace Modules.Utilities
 
 
                     await UniTask.WhenAll(
-                        _current.m_CanvasGroup.DOFade(0f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token),
-                        _target.m_CanvasGroup.DOFade(1f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token)
+                        currentCanvasGroup.DOFade(0f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token),
+                        targetCanvasGroup.DOFade(1f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token)
                     );
                     _current.SetShow(false);
                     _target.SetShow(true);
@@ -363,9 +388,9 @@ namespace Modules.Utilities
                 {
                     var duration = Mathf.FloorToInt(transitionInfo.m_Duration * 0.5f);
                     _target.m_RectTransform.anchoredPosition = transitionInfo.m_StartPosition;
-                    _target.m_CanvasGroup.alpha = 1;
-                    _target.m_CanvasGroup.interactable = true;
-                    _target.m_CanvasGroup.blocksRaycasts = true;
+                    targetCanvasGroup.alpha = 1;
+                    targetCanvasGroup.interactable = true;
+                    targetCanvasGroup.blocksRaycasts = true;
 
                     await UniTask.WhenAll(
                                     _current.m_RectTransform
