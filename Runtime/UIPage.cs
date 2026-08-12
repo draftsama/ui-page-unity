@@ -22,6 +22,7 @@ namespace Modules.Utilities
     public class UIPage : MonoBehaviour
     {
         private static readonly Dictionary<string, List<UIPage>> s_PageRegistry = new();
+        private static readonly HashSet<string> s_TransitioningGroups = new();
 
 #if UNITY_EDITOR
         static UIPage()
@@ -299,6 +300,16 @@ namespace Modules.Utilities
             if (_current == null || _target == null || _current == _target || _current.m_IsTransitionPage || _target.m_IsTransitionPage)
                 return;
 
+            var targetGroup = _target.m_GroupName;
+            var currentGroup = _current.m_GroupName;
+
+            if (!s_TransitioningGroups.Add(targetGroup)) return;
+            if (currentGroup != targetGroup && !s_TransitioningGroups.Add(currentGroup))
+            {
+                s_TransitioningGroups.Remove(targetGroup);
+                return;
+            }
+
             try
             {
                 _current.m_IsTransitionPage = true;
@@ -327,7 +338,6 @@ namespace Modules.Utilities
 
 
                     await UITransitionFade.Instance.FadeIn((int)duration, transitionInfo.m_FadeColor, _token);
-                    // await UniTask.Delay(300, cancellationToken: _token);
                     _current.SetShow(false);
                     _target.SetShow(true);
 
@@ -385,6 +395,9 @@ namespace Modules.Utilities
             {
                 if (_current) _current.m_IsTransitionPage = false;
                 if (_target) _target.m_IsTransitionPage = false;
+
+                s_TransitioningGroups.Remove(targetGroup);
+                if (currentGroup != targetGroup) s_TransitioningGroups.Remove(currentGroup);
             }
 
         }
