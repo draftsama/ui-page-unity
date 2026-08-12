@@ -32,10 +32,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Exiting play mode mid-transition and re-entering play mode no longer leaves `m_IsOpened` in a stale state — pages start in a correct, predictable open/closed state on next play.
   3. Calling `SetShow()` after the page's CanvasGroup has been destroyed externally no longer throws an unhandled exception or silently no-ops — it either recovers (re-fetches the component) or fails with a clear, loggable error.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 - [x] 01-01-PLAN.md
-- [ ] 01-02-PLAN.md
+- [x] 01-02-PLAN.md
 
 ### Phase 2: Test Safety Net
 
@@ -89,7 +89,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bugfixes | 1/2 | In Progress|  |
+| 1. Bugfixes | 2/2 | In Progress|  |
 | 2. Test Safety Net | 0/TBD | Not started | - |
 | 3. Architecture Refactor | 0/TBD | Not started | - |
 | 4. Performance | 0/TBD | Not started | - |

@@ -10,8 +10,8 @@ Requirements for this cleanup milestone. Each maps to roadmap phases.
 ### Bugfix
 
 - [x] **BUG-01**: Rapid double-call to `TransitionPageAsync()` on the same page group no longer desyncs `m_IsTransitionPage`, so pages don't get stuck unable to transition
-- [ ] **BUG-02**: Exiting play mode mid-transition in the editor no longer leaves `m_IsOpened` in a stale state on next play
-- [ ] **BUG-03**: `SetShow()` no longer throws/no-ops silently when the cached CanvasGroup reference has been destroyed externally
+- [x] **BUG-02**: Exiting play mode mid-transition in the editor no longer leaves `m_IsOpened` in a stale state on next play
+- [x] **BUG-03**: `SetShow()` no longer throws/no-ops silently when the cached CanvasGroup reference has been destroyed externally
 
 ### Testing
 
@@ -63,8 +63,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BUG-01 | Phase 1 | Complete |
-| BUG-02 | Phase 1 | Pending |
-| BUG-03 | Phase 1 | Pending |
+| BUG-02 | Phase 1 | Complete |
+| BUG-03 | Phase 1 | Complete |
 | TEST-01 | Phase 2 | Pending |
 | TEST-02 | Phase 2 | Pending |
 | TEST-03 | Phase 2 | Pending |
