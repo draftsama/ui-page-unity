@@ -24,21 +24,49 @@ namespace Modules.Utilities
         private static readonly Dictionary<string, List<UIPage>> s_PageRegistry = new();
         private static readonly HashSet<string> s_TransitioningGroups = new();
 
-#if UNITY_EDITOR
-        static UIPage()
+        /// <summary>
+        /// Clears static page state before the first scene loads on every play-mode entry and in
+        /// player builds. Runs even when Unity 6's Enter Play Mode Options have domain reload
+        /// disabled, which is the exact configuration where a stale registry from the previous
+        /// session would otherwise carry destroyed pages into the next one.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
         {
-            UnityEditor.EditorApplication.playModeStateChanged += state =>
-            {
-                if (state == UnityEditor.PlayModeStateChange.EnteredEditMode)
-                {
-                    s_PageRegistry.Clear();
+            s_PageRegistry.Clear();
+            s_TransitioningGroups.Clear();
+        }
 
-                    foreach (var page in Object.FindObjectsByType<UIPage>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                    {
-                        page.m_IsTransitionPage = false;
-                    }
-                }
-            };
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void InitializeEditorHooks()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        /// <summary>
+        /// Repairs state left behind when play mode stops. Fires after Unity restores the
+        /// serialized scene. Only pages that were actually mid-transition are reset to their
+        /// default baseline - a page the developer deliberately previewed at edit time keeps its
+        /// authored state. The repair is in-memory only: it never marks the scene, an object, or
+        /// a prefab dirty, and never records an undo entry.
+        /// </summary>
+        private static void OnPlayModeStateChanged(PlayModeStateChange _state)
+        {
+            if (_state != PlayModeStateChange.EnteredEditMode) return;
+
+            s_PageRegistry.Clear();
+            s_TransitioningGroups.Clear();
+
+            foreach (var page in Object.FindObjectsByType<UIPage>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var wasTransitioning = page.m_IsTransitionPage;
+                page.m_IsTransitionPage = false;
+
+                if (wasTransitioning)
+                    page.SetShow(page.m_IsDefault);
+            }
         }
 #endif
 
@@ -99,8 +127,12 @@ namespace Modules.Utilities
             if (!list.Contains(this))
                 list.Add(this);
 
+            // Prune destroyed carry-over entries (Unity Object equality treats these as null) so a
+            // page destroyed in a previous play session cannot influence this session's scan.
+            list.RemoveAll(_ => _ == null);
+
             // Show only if default AND no other page is already open in this group
-            var hasOpened = list.Any(_ => _ != this && _.m_IsOpened);
+            var hasOpened = list.Any(_ => _ != null && _ != this && _.m_IsOpened);
             var shouldShow = m_IsDefault && !hasOpened;
 
             SetShow(shouldShow);
@@ -118,7 +150,7 @@ namespace Modules.Utilities
             if (m_IsOpened)
             {
                 var defaultPage = list.FirstOrDefault(_ => _ != null && _.m_IsDefault);
-                defaultPage?.SetShow(true);
+                if (defaultPage) defaultPage.SetShow(true);
             }
         }
 
