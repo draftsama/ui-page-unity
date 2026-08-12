@@ -62,28 +62,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | TBD | Pending |
-| BUG-02 | TBD | Pending |
-| BUG-03 | TBD | Pending |
-| TEST-01 | TBD | Pending |
-| TEST-02 | TBD | Pending |
-| TEST-03 | TBD | Pending |
-| TEST-04 | TBD | Pending |
-| REFAC-01 | TBD | Pending |
-| REFAC-02 | TBD | Pending |
-| REFAC-03 | TBD | Pending |
-| REFAC-04 | TBD | Pending |
-| REFAC-05 | TBD | Pending |
-| REFAC-06 | TBD | Pending |
-| PERF-01 | TBD | Pending |
-| PERF-02 | TBD | Pending |
-| PERF-03 | TBD | Pending |
+| BUG-01 | Phase 1 | Pending |
+| BUG-02 | Phase 1 | Pending |
+| BUG-03 | Phase 1 | Pending |
+| TEST-01 | Phase 2 | Pending |
+| TEST-02 | Phase 2 | Pending |
+| TEST-03 | Phase 2 | Pending |
+| TEST-04 | Phase 2 | Pending |
+| REFAC-01 | Phase 3 | Pending |
+| REFAC-02 | Phase 3 | Pending |
+| REFAC-03 | Phase 3 | Pending |
+| REFAC-04 | Phase 3 | Pending |
+| REFAC-05 | Phase 3 | Pending |
+| REFAC-06 | Phase 3 | Pending |
+| PERF-01 | Phase 4 | Pending |
+| PERF-02 | Phase 4 | Pending |
+| PERF-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 16 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 16 ⚠️ (roadmap step next)
+- Mapped to phases: 16 (Phase 1: 3, Phase 2: 4, Phase 3: 6, Phase 4: 3)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-12*
-*Last updated: 2026-08-12 after initial definition*
+*Last updated: 2026-08-12 after roadmap creation (4 phases, 100% coverage)*
