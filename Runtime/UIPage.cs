@@ -266,11 +266,22 @@ namespace Modules.Utilities
 
         public static async UniTask TransitionPageAsync(UIPage _target, TransitionInfo _overrideTransition = null, CancellationToken _token = default)
         {
+            if (!_target) return;
+            if (_target.m_IsTransitionPage) return;
+
             var current = UIPage.GetCurrentPage(_target.m_GroupName);
             // Debug.Log($"TransitionPageAsync current:{current}  - target:{_target}");
 
             if (current == null)
             {
+                _target.SetShow(true);
+
+                foreach (var pe in _target.GetComponents<IPageShowBegin>())
+                    pe.OnBeginShowPage();
+
+                foreach (var pe in _target.GetComponents<IPageShowEnd>())
+                    pe.OnEndShowPage();
+
                 return;
             }
 
@@ -288,88 +299,93 @@ namespace Modules.Utilities
             if (_current == null || _target == null || _current == _target || _current.m_IsTransitionPage || _target.m_IsTransitionPage)
                 return;
 
-            _current.m_IsTransitionPage = true;
-            _target.m_IsTransitionPage = true;
-            _current.m_CanvasGroup.blocksRaycasts = false;
-            _target.m_CanvasGroup.blocksRaycasts = false;
-
-            //if target sibling index is less than current sibling index, set target sibling index to current sibling index
-
-            if (_target.m_RectTransform.GetSiblingIndex() < _current.m_RectTransform.GetSiblingIndex())
+            try
             {
-                _target.m_RectTransform.SetSiblingIndex(_current.m_RectTransform.GetSiblingIndex());
+                _current.m_IsTransitionPage = true;
+                _target.m_IsTransitionPage = true;
+                _current.m_CanvasGroup.blocksRaycasts = false;
+                _target.m_CanvasGroup.blocksRaycasts = false;
 
+                //if target sibling index is less than current sibling index, set target sibling index to current sibling index
+
+                if (_target.m_RectTransform.GetSiblingIndex() < _current.m_RectTransform.GetSiblingIndex())
+                {
+                    _target.m_RectTransform.SetSiblingIndex(_current.m_RectTransform.GetSiblingIndex());
+
+                }
+
+
+                foreach (var pe in _target.GetComponents<IPageShowBegin>())
+                    pe.OnBeginShowPage();
+
+                foreach (var pe in _current.GetComponents<IPageHideBegin>())
+                    pe.OnBeginHidePage();
+
+                if (transitionInfo.m_Type == TransitionInfo.TransitionType.Fade)
+                {
+                    var duration = transitionInfo.m_Duration * 0.5f;
+
+
+                    await UITransitionFade.Instance.FadeIn((int)duration, transitionInfo.m_FadeColor, _token);
+                    // await UniTask.Delay(300, cancellationToken: _token);
+                    _current.SetShow(false);
+                    _target.SetShow(true);
+
+                    await UITransitionFade.Instance.FadeOut((int)duration, transitionInfo.m_FadeColor, _token);
+
+
+                }
+                else if (transitionInfo.m_Type == TransitionInfo.TransitionType.CrossFade)
+                {
+
+
+                    await UniTask.WhenAll(
+                        _current.m_CanvasGroup.DOFade(0f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token),
+                        _target.m_CanvasGroup.DOFade(1f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token)
+                    );
+                    _current.SetShow(false);
+                    _target.SetShow(true);
+
+
+
+                }
+                else if (transitionInfo.m_Type == TransitionInfo.TransitionType.Slide)
+                {
+                    var duration = Mathf.FloorToInt(transitionInfo.m_Duration * 0.5f);
+                    _target.m_RectTransform.anchoredPosition = transitionInfo.m_StartPosition;
+                    _target.m_CanvasGroup.alpha = 1;
+                    _target.m_CanvasGroup.interactable = true;
+                    _target.m_CanvasGroup.blocksRaycasts = true;
+
+                    await UniTask.WhenAll(
+                                    _current.m_RectTransform
+                                        .DOAnchorPos(transitionInfo.m_EndPosition - transitionInfo.m_StartPosition, duration / 1000f)
+                                        .SetEase(transitionInfo.m_Ease)
+                                        .SetUpdate(true)
+                                        .WithCancellation(_token),
+                                    _target.m_RectTransform
+                                        .DOAnchorPos(transitionInfo.m_EndPosition, duration / 1000f)
+                                        .SetEase(transitionInfo.m_Ease)
+                                        .SetUpdate(true)
+                                        .WithCancellation(_token)
+                                 );
+
+                    _current.SetShow(false);
+                    _target.SetShow(true);
+
+                }
+
+                foreach (var pe in _target.GetComponents<IPageShowEnd>())
+                    pe.OnEndShowPage();
+
+                foreach (var pe in _current.GetComponents<IPageHideEnd>())
+                    pe.OnEndHidePage();
             }
-
-
-            foreach (var pe in _target.GetComponents<IPageShowBegin>())
-                pe.OnBeginShowPage();
-
-            foreach (var pe in _current.GetComponents<IPageHideBegin>())
-                pe.OnBeginHidePage();
-
-            if (transitionInfo.m_Type == TransitionInfo.TransitionType.Fade)
+            finally
             {
-                var duration = transitionInfo.m_Duration * 0.5f;
-
-
-                await UITransitionFade.Instance.FadeIn((int)duration, transitionInfo.m_FadeColor, _token);
-                // await UniTask.Delay(300, cancellationToken: _token);
-                _current.SetShow(false);
-                _target.SetShow(true);
-
-                await UITransitionFade.Instance.FadeOut((int)duration, transitionInfo.m_FadeColor, _token);
-
-
+                if (_current) _current.m_IsTransitionPage = false;
+                if (_target) _target.m_IsTransitionPage = false;
             }
-            else if (transitionInfo.m_Type == TransitionInfo.TransitionType.CrossFade)
-            {
-
-
-                await UniTask.WhenAll(
-                    _current.m_CanvasGroup.DOFade(0f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token),
-                    _target.m_CanvasGroup.DOFade(1f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token)
-                );
-                _current.SetShow(false);
-                _target.SetShow(true);
-
-
-
-            }
-            else if (transitionInfo.m_Type == TransitionInfo.TransitionType.Slide)
-            {
-                var duration = Mathf.FloorToInt(transitionInfo.m_Duration * 0.5f);
-                _target.m_RectTransform.anchoredPosition = transitionInfo.m_StartPosition;
-                _target.m_CanvasGroup.alpha = 1;
-                _target.m_CanvasGroup.interactable = true;
-                _target.m_CanvasGroup.blocksRaycasts = true;
-
-                await UniTask.WhenAll(
-                                _current.m_RectTransform
-                                    .DOAnchorPos(transitionInfo.m_EndPosition - transitionInfo.m_StartPosition, duration / 1000f)
-                                    .SetEase(transitionInfo.m_Ease)
-                                    .SetUpdate(true)
-                                    .WithCancellation(_token),
-                                _target.m_RectTransform
-                                    .DOAnchorPos(transitionInfo.m_EndPosition, duration / 1000f)
-                                    .SetEase(transitionInfo.m_Ease)
-                                    .SetUpdate(true)
-                                    .WithCancellation(_token)
-                             );
-
-                _current.SetShow(false);
-                _target.SetShow(true);
-
-            }
-
-            foreach (var pe in _target.GetComponents<IPageShowEnd>())
-                pe.OnEndShowPage();
-
-            foreach (var pe in _current.GetComponents<IPageHideEnd>())
-                pe.OnEndHidePage();
-
-            _current.m_IsTransitionPage = false;
-            _target.m_IsTransitionPage = false;
 
         }
 
