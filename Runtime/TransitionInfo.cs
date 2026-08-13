@@ -6,7 +6,7 @@ using DG.Tweening;
 using UnityEditor;
 #endif
 
-namespace Modules.Utilities
+namespace Draft
 {
     [Serializable]
     public class TransitionInfo
@@ -33,7 +33,7 @@ namespace Modules.Utilities
 }
 
 #if UNITY_EDITOR
-namespace Modules.Utilities.Editor
+namespace Draft.Editor
 {
 
     [CustomPropertyDrawer(typeof(TransitionInfo))]

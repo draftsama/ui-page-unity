@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Modules.Utilities;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using System.Collections.Generic;
@@ -14,7 +13,7 @@ using UnityEditor;
 using System.Reflection;
 #endif
 
-namespace Modules.Utilities
+namespace Draft
 {
 
     [RequireComponent(typeof(CanvasGroup))]
@@ -186,7 +185,7 @@ namespace Modules.Utilities
             if (m_IsOpened || m_IsTransitionPage) return;
             if (_token == default)
                 _token = this.GetCancellationTokenOnDestroy();
-            TransitionPageAsync(this, _overrideTransitionInfo, _token).Forget();
+            OpenPageAsync(_overrideTransitionInfo, _token).Forget();
 
         }
 
@@ -397,14 +396,16 @@ namespace Modules.Utilities
                     await UITransitionFade.Instance.FadeIn((int)duration, transitionInfo.m_FadeColor, _token);
                     _current.SetShow(false);
                     _target.SetShow(true);
-
+                     _current.m_RectTransform.anchoredPosition = Vector2.zero;
+                    _target.m_RectTransform.anchoredPosition = Vector2.zero;
                     await UITransitionFade.Instance.FadeOut((int)duration, transitionInfo.m_FadeColor, _token);
 
 
                 }
                 else if (transitionInfo.m_Type == TransitionInfo.TransitionType.CrossFade)
                 {
-
+                    _current.m_RectTransform.anchoredPosition = Vector2.zero;
+                    _target.m_RectTransform.anchoredPosition = Vector2.zero;
 
                     await UniTask.WhenAll(
                         currentCanvasGroup.DOFade(0f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token),
@@ -465,9 +466,6 @@ namespace Modules.Utilities
     }
 
 
-
-
-
     public interface IPageShowBegin
     {
         void OnBeginShowPage();
@@ -492,7 +490,7 @@ namespace Modules.Utilities
 
 
 #if UNITY_EDITOR
-namespace Modules.Utilities.Editor
+namespace Draft.Editor
 {
     [CustomEditor(typeof(UIPage), true)]
     public class UIPageEditor : UnityEditor.Editor

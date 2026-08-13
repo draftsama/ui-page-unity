@@ -1,11 +1,10 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using Modules.Utilities;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Modules.Utilities
+namespace Draft
 {
     public class UITransitionFade : MonoBehaviour
     {
