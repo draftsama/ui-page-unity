@@ -53,8 +53,8 @@ namespace Draft
                         _instance.image = fade.GetComponent<Image>();
                         _instance.canvasGroup = fade.GetComponent<CanvasGroup>();
                         _instance.canvasGroup.alpha = 0;
-                        _instance.canvasGroup.blocksRaycasts = true;
-                        _instance.canvasGroup.interactable = true;
+                        _instance.canvasGroup.blocksRaycasts = false;
+                        _instance.canvasGroup.interactable = false;
 
                     }
                 }
@@ -69,6 +69,8 @@ namespace Draft
             await UniTask.Yield();
             canvasGroup.alpha = 0;
             image.color = _color;
+            canvasGroup.blocksRaycasts = true;
+            canvasGroup.interactable = true;
             await canvasGroup.DOFade(1f, _milliseconds / 1000f).SetUpdate(true).WithCancellation(_token);
 
         }
@@ -78,6 +80,8 @@ namespace Draft
             canvasGroup.alpha = 1;
             image.color = _color;
             await canvasGroup.DOFade(0f, _milliseconds / 1000f).SetUpdate(true).WithCancellation(_token);
+            canvasGroup.blocksRaycasts = false;
+            canvasGroup.interactable = false;
 
         }
 
