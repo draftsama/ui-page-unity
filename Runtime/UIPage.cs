@@ -402,10 +402,18 @@ namespace Draft
                     _current.m_RectTransform.anchoredPosition = Vector2.zero;
                     _target.m_RectTransform.anchoredPosition = Vector2.zero;
 
+                    currentCanvasGroup.interactable = false;
+                    currentCanvasGroup.blocksRaycasts = false;
+
+                    targetCanvasGroup.interactable = false;
+                    targetCanvasGroup.blocksRaycasts = false;
+
                     await UniTask.WhenAll(
                         currentCanvasGroup.DOFade(0f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token),
                         targetCanvasGroup.DOFade(1f, transitionInfo.m_Duration / 1000f).SetUpdate(true).WithCancellation(_token)
                     );
+                    
+                    
                     _current.SetShow(false);
                     _target.SetShow(true);
 
@@ -417,8 +425,7 @@ namespace Draft
                     var duration = Mathf.FloorToInt(transitionInfo.m_Duration * 0.5f);
                     _target.m_RectTransform.anchoredPosition = transitionInfo.m_StartPosition;
                     targetCanvasGroup.alpha = 1;
-                    targetCanvasGroup.interactable = true;
-                    targetCanvasGroup.blocksRaycasts = true;
+               
 
                     await UniTask.WhenAll(
                                     _current.m_RectTransform
