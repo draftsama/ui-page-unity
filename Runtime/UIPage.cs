@@ -7,6 +7,7 @@ using Object = UnityEngine.Object;
 using System.Collections.Generic;
 using DG.Tweening;
 using UnityEditor;
+using UnityEngine.Events;
 
 namespace Draft
 {
@@ -74,6 +75,16 @@ namespace Draft
         public bool IsTransitionPage => m_IsTransitionPage;
         [SerializeField][HideInInspector] public TransitionInfo m_TransitionInfo;
 
+
+
+        #region Event 
+
+        [HideInInspector]public UnityEvent OnBeginShowPageEvent;
+        [HideInInspector]public UnityEvent OnEndShowPageEvent;
+        [HideInInspector]public UnityEvent OnBeginHidePageEvent;
+        [HideInInspector]public UnityEvent OnEndHidePageEvent;
+
+        #endregion
 
         private CanvasGroup m_CanvasGroupCache;
 
@@ -192,22 +203,34 @@ namespace Draft
 
 
             if (_isShow)
+            {
                 foreach (var pe in GetComponents<IPageShowBegin>())
                     pe.OnBeginShowPage();
+                OnBeginShowPageEvent?.Invoke();
+            }
             else
+            {
                 foreach (var pe in GetComponents<IPageHideBegin>())
                     pe.OnBeginHidePage();
+                OnBeginHidePageEvent?.Invoke();
+            }
 
 
             await canvasGroup.DOFade(targetAlpha, _milliseconds / 1000f).SetUpdate(true).WithCancellation(_token);
 
 
             if (_isShow)
+            {
                 foreach (var pe in GetComponents<IPageShowEnd>())
                     pe.OnEndShowPage();
+                OnEndShowPageEvent?.Invoke();
+            }
             else
+            {
                 foreach (var pe in GetComponents<IPageHideEnd>())
                     pe.OnEndHidePage();
+                OnEndHidePageEvent?.Invoke();
+            }
 
             m_IsOpened = _isShow;
         }
@@ -327,9 +350,11 @@ namespace Draft
 
                 foreach (var pe in _target.GetComponents<IPageShowBegin>())
                     pe.OnBeginShowPage();
+                _target.OnBeginShowPageEvent?.Invoke();
 
                 foreach (var pe in _target.GetComponents<IPageShowEnd>())
                     pe.OnEndShowPage();
+                _target.OnEndShowPageEvent?.Invoke();
 
                 return;
             }
@@ -379,9 +404,11 @@ namespace Draft
 
                 foreach (var pe in _target.GetComponents<IPageShowBegin>())
                     pe.OnBeginShowPage();
+                _target.OnBeginShowPageEvent?.Invoke();
 
                 foreach (var pe in _current.GetComponents<IPageHideBegin>())
                     pe.OnBeginHidePage();
+                _current.OnBeginHidePageEvent?.Invoke();
 
                 if (transitionInfo.m_Type == TransitionInfo.TransitionType.Fade)
                 {
@@ -447,9 +474,11 @@ namespace Draft
 
                 foreach (var pe in _target.GetComponents<IPageShowEnd>())
                     pe.OnEndShowPage();
+                _target.OnEndShowPageEvent?.Invoke();
 
                 foreach (var pe in _current.GetComponents<IPageHideEnd>())
                     pe.OnEndHidePage();
+                _current.OnEndHidePageEvent?.Invoke();
             }
             finally
             {
