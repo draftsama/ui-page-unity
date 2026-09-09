@@ -83,7 +83,7 @@ namespace Draft.Editor
             {
                 isDefault.boolValue = true;
 
-                var allPages = FindObjectsByType<UIPage>()
+                var allPages = FindObjectsByType<UIPage>(FindObjectsSortMode.None)
                                    .Where(_ => _.GroupName == script.GroupName && _ != script);
 
                 foreach (var p in allPages)
@@ -128,7 +128,7 @@ namespace Draft.Editor
                 }
                 else
                 {
-                    var allPages = FindObjectsByType<UIPage>()
+                    var allPages = FindObjectsByType<UIPage>(FindObjectsSortMode.None)
                         .Where(_ => _.GroupName == script.GroupName && _ != script);
 
                     foreach (var p in allPages)
@@ -165,7 +165,8 @@ namespace Draft.Editor
             {
                 if (isDefault.boolValue)
                 {
-                    var allPages = FindObjectsByType<UIPage>()
+
+                    var allPages = FindObjectsByType<UIPage>(FindObjectsSortMode.None)
                         .Where(_ => _.GroupName == script.GroupName && _ != script);
 
 
@@ -197,11 +198,7 @@ namespace Draft.Editor
 
         static UIPageHierarchyIndicator()
         {
-#if UNITY_6000_3_OR_NEWER
-            EditorApplication.hierarchyWindowItemByEntityIdOnGUI += OnHierarchyGUI;
-#else
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyGUI;
-#endif
             EditorApplication.update += OnEditorUpdate;
         }
 
@@ -252,13 +249,11 @@ namespace Draft.Editor
             GUI.Label(rect, new GUIContent(text, tooltip), s_BadgeStyle);
         }
 
-#if UNITY_6000_3_OR_NEWER
-        private static void OnHierarchyGUI(EntityId entityId, Rect selectionRect)
-        {
-            var go = EditorUtility.EntityIdToObject(entityId) as GameObject;
-#else
         private static void OnHierarchyGUI(int instanceID, Rect selectionRect)
         {
+#if UNITY_6000_3_OR_NEWER
+            var go = EditorUtility.EntityIdToObject(instanceID) as GameObject;
+#else
             var go = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
 #endif
             if (go == null) return;
