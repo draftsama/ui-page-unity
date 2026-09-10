@@ -122,7 +122,6 @@ namespace Draft
             m_IsTransitionPage = false;
             m_CanvasGroupCache = GetComponent<CanvasGroup>();
             m_RectTransform = GetComponent<RectTransform>();
-
             // Register into group
             if (!s_PageRegistry.TryGetValue(m_GroupName, out var list))
             {
@@ -293,9 +292,17 @@ namespace Draft
                 return pages.FirstOrDefault(_ => _.m_GroupName == _groupName && _.name == _name);
             }
 #endif
-            if (!s_PageRegistry.TryGetValue(_groupName, out var list)) return null;
-            return list.FirstOrDefault(_ => _ != null && _.name == _name);
+            if (!s_PageRegistry.TryGetValue(_groupName, out var list))
+            {
+                Debug.LogError($"UIPage.GetPageByName: group '{_groupName}' has no registered pages.");
+                return null;
+            }
 
+            var page = list.FirstOrDefault(_ => _ != null && _.name == _name);
+            if (!page)
+                Debug.LogError($"UIPage.GetPageByName: no page named '{_name}' in group '{_groupName}'.");
+
+            return page;
         }
 
 
@@ -346,6 +353,7 @@ namespace Draft
 
             if (current == null)
             {
+                _target.m_RectTransform.SetAsLastSibling();
                 _target.SetShow(true);
 
                 foreach (var pe in _target.GetComponents<IPageShowBegin>())
@@ -393,13 +401,9 @@ namespace Draft
                 currentCanvasGroup.blocksRaycasts = false;
                 targetCanvasGroup.blocksRaycasts = false;
 
-                //if target sibling index is less than current sibling index, set target sibling index to current sibling index
-
-                if (_target.m_RectTransform.GetSiblingIndex() < _current.m_RectTransform.GetSiblingIndex())
-                {
-                    _target.m_RectTransform.SetSiblingIndex(_current.m_RectTransform.GetSiblingIndex());
-
-                }
+                // Render target above every sibling under its parent - not just above _current -
+                // so it reaches the true top of the group regardless of how many pages share the parent.
+                _target.m_RectTransform.SetAsLastSibling();
 
 
                 foreach (var pe in _target.GetComponents<IPageShowBegin>())
