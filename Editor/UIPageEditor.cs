@@ -1,6 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_6000_6_OR_NEWER
+using Unity.Hierarchy;
+using Unity.Hierarchy.Editor;
+using UnityEngine.UIElements;
+#endif
 
 namespace Draft.Editor
 {
@@ -198,7 +204,14 @@ namespace Draft.Editor
 
         static UIPageHierarchyIndicator()
         {
-#if UNITY_6000_5_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
+            // Unity 6.6 replaced the hierarchy window with a UI Toolkit implementation
+            // (Unity.Hierarchy.Editor.HierarchyWindow). The legacy IMGUI callbacks below
+            // are still present but are never invoked by the new window, so badges must
+            // be injected as VisualElements via BindViewItem/UnbindViewItem instead.
+            HierarchyWindow.BindViewItem += OnBindViewItem;
+            HierarchyWindow.UnbindViewItem += OnUnbindViewItem;
+#elif UNITY_6000_5_OR_NEWER
             EditorApplication.hierarchyWindowItemByEntityIdOnGUI += OnHierarchyGUI;
 #else
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyGUI;
@@ -208,10 +221,16 @@ namespace Draft.Editor
 
         private static void OnEditorUpdate()
         {
-            if (!Application.isPlaying) return;
             if (EditorApplication.timeSinceStartup < s_NextRepaintTime) return;
             s_NextRepaintTime = EditorApplication.timeSinceStartup + k_RepaintInterval;
-            EditorApplication.RepaintHierarchyWindow();
+
+#if UNITY_6000_6_OR_NEWER
+            foreach (var kv in s_BoundItems)
+                RefreshBadges(kv.Value.Page, kv.Value.Container);
+#endif
+
+            if (Application.isPlaying)
+                EditorApplication.RepaintHierarchyWindow();
         }
 
         private static Texture2D GetCircleTexture()
@@ -294,6 +313,95 @@ namespace Draft.Editor
                     new Color(0.4f, 0.7f, 1f), "D", "UIPage: Default");
             }
         }
+
+#if UNITY_6000_6_OR_NEWER
+        // Unity 6.6's hierarchy window (Unity.Hierarchy.Editor.HierarchyWindow) is built on
+        // UI Toolkit and recycles row VisualElements as items scroll, so badges are tracked
+        // per bound HierarchyViewItem instead of drawn imperatively like the IMGUI path above.
+        private readonly struct BoundBadge
+        {
+            public readonly UIPage Page;
+            public readonly VisualElement Container;
+
+            public BoundBadge(UIPage page, VisualElement container)
+            {
+                Page = page;
+                Container = container;
+            }
+        }
+
+        private static readonly Dictionary<HierarchyViewItem, BoundBadge> s_BoundItems = new();
+
+        private static void OnBindViewItem(HierarchyWindow window, HierarchyView view, HierarchyViewItem item)
+        {
+            s_BoundItems.Remove(item);
+
+            var container = item.RightCustomContainer;
+            if (container == null) return;
+            container.Clear();
+
+            if (item.Handler is not HierarchyGameObjectHandler handler) return;
+
+            var go = handler.GetGameObject(item.Node);
+            if (go == null) return;
+
+            var uiPage = go.GetComponent<UIPage>();
+            if (uiPage == null) return;
+
+            s_BoundItems[item] = new BoundBadge(uiPage, container);
+            RefreshBadges(uiPage, container);
+        }
+
+        private static void OnUnbindViewItem(HierarchyWindow window, HierarchyView view, HierarchyViewItem item)
+        {
+            s_BoundItems.Remove(item);
+            item.RightCustomContainer?.Clear();
+        }
+
+        private static VisualElement CreateBadgeElement(Color textColor, string text, string tooltip)
+        {
+            const float size = 15f;
+
+            var badge = new Label(text)
+            {
+                tooltip = tooltip,
+            };
+            badge.style.width = size;
+            badge.style.height = size;
+            badge.style.marginLeft = 2f;
+            badge.style.fontSize = 9f;
+            badge.style.unityFontStyleAndWeight = FontStyle.Bold;
+            badge.style.unityTextAlign = TextAnchor.MiddleCenter;
+            badge.style.color = textColor;
+            badge.style.backgroundColor = new Color(0.18f, 0.18f, 0.18f, 0.92f);
+            badge.style.borderTopLeftRadius = size * 0.5f;
+            badge.style.borderTopRightRadius = size * 0.5f;
+            badge.style.borderBottomLeftRadius = size * 0.5f;
+            badge.style.borderBottomRightRadius = size * 0.5f;
+            return badge;
+        }
+
+        private static void RefreshBadges(UIPage uiPage, VisualElement container)
+        {
+            if (uiPage == null || container == null) return;
+
+            container.Clear();
+
+            if (uiPage.IsTransitionPage)
+            {
+                container.Add(CreateBadgeElement(new Color(1f, 0.6f, 0f), "T", "UIPage: Transitioning"));
+            }
+            else if (uiPage.IsOpened)
+            {
+                container.Add(CreateBadgeElement(new Color(0.3f, 1f, 0.3f), "O", "UIPage: Opened"));
+            }
+
+            if (uiPage.IsDefault)
+            {
+                container.Add(CreateBadgeElement(new Color(0.4f, 0.7f, 1f), "D", "UIPage: Default"));
+            }
+        }
+#endif
     }
 
 }
