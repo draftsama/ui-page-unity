@@ -419,12 +419,13 @@ namespace Draft
                     var duration = transitionInfo.m_Duration * 0.5f;
 
 
-                    await UITransitionFade.Instance.FadeIn((int)duration, transitionInfo.m_FadeColor, _token);
+                    var fade = UITransitionFade.GetFor(_target.m_RectTransform.parent);
+                    await fade.FadeIn((int)duration, transitionInfo.m_FadeColor, _token);
                     _current.SetShow(false);
                     _target.SetShow(true);
                      _current.m_RectTransform.anchoredPosition = Vector2.zero;
                     _target.m_RectTransform.anchoredPosition = Vector2.zero;
-                    await UITransitionFade.Instance.FadeOut((int)duration, transitionInfo.m_FadeColor, _token);
+                    await fade.FadeOut((int)duration, transitionInfo.m_FadeColor, _token);
 
 
                 }
